@@ -2,6 +2,9 @@ package data
 
 import (
 	"Printers.imangalizhumash.net/internal/validator"
+	"database/sql"
+	"errors"
+	"github.com/lib/pq"
 	"time"
 )
 
@@ -27,4 +30,91 @@ func ValidatePrinter(v *validator.Validator, printer *Printer) {
 	v.Check(printer.SupportedPaperSizes != nil, "supported_paper_sizes", "must be provided")
 	v.Check(len(printer.SupportedPaperSizes) > 0, "supported_paper_sizes", "must contain at least 1 supported paper size")
 	v.Check(validator.Unique(printer.SupportedPaperSizes), "supported_paper_sizes", "must not contain duplicate values")
+}
+
+type PrinterModel struct {
+	DB *sql.DB
+}
+
+func (p PrinterModel) Insert(printer *Printer) error {
+	query := `
+		INSERT INTO printers (name, type, is_color, ip_address, status, supported_paper_sizes, description, battery_left)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		RETURNING id, created_at`
+	args := []interface{}{printer.Name, printer.Type, printer.IsColor, printer.IPAddress, printer.Status, pq.Array(printer.SupportedPaperSizes), printer.Description, printer.BatteryLeft}
+	return p.DB.QueryRow(query, args...).Scan(&printer.ID, &printer.CreatedAt)
+}
+
+func (p PrinterModel) Get(id int64) (*Printer, error) {
+	if id < 1 {
+		return nil, ErrRecordNotFound
+	}
+
+	query := `
+		SELECT id, created_at, name, type, is_color, ip_address, status, supported_paper_sizes, description, battery_left
+		FROM printers
+		WHERE id = $1`
+
+	var printer Printer
+	err := p.DB.QueryRow(query, id).Scan(
+		&printer.ID,
+		&printer.CreatedAt,
+		&printer.Name,
+		&printer.Type,
+		&printer.IsColor,
+		&printer.IPAddress,
+		&printer.Status,
+		pq.Array(&printer.SupportedPaperSizes),
+		&printer.Description,
+		&printer.BatteryLeft,
+	)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+	return &printer, nil
+}
+
+func (p PrinterModel) Update(printer *Printer) error {
+	query := `
+		UPDATE printers
+		SET name = $1, type = $2, ip_address = $3, status = $4, description = $5, battery_left = $6
+		WHERE id = $7
+		RETURNING id`
+	args := []interface{}{
+		printer.Name,
+		printer.Type,
+		printer.IPAddress,
+		printer.Status,
+		printer.Description,
+		printer.BatteryLeft,
+		printer.ID,
+	}
+	return p.DB.QueryRow(query, args...).Scan(&printer.ID)
+}
+
+func (p PrinterModel) Delete(id int64) error {
+	if id < 1 {
+		return ErrRecordNotFound
+	}
+	query := `
+		DELETE FROM printers
+		WHERE id = $1`
+	result, err := p.DB.Exec(query, id)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return ErrRecordNotFound
+	}
+	return nil
 }
