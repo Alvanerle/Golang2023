@@ -97,12 +97,12 @@ func (app *application) updatePrinterHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	var input struct {
-		Name        string       `json:"name"`
-		Type        string       `json:"type"`
-		IpAddress   string       `json:"ip_address"`
-		Status      string       `json:"status"`
-		Description string       `json:"description"`
-		BatteryLeft data.Runtime `json:"battery_left"`
+		Name        *string       `json:"name"`
+		Type        *string       `json:"type"`
+		IpAddress   *string       `json:"ip_address"`
+		Status      *string       `json:"status"`
+		Description *string       `json:"description"`
+		BatteryLeft *data.Runtime `json:"battery_left"`
 	}
 	err = app.readJSON(w, r, &input)
 	if err != nil {
@@ -110,12 +110,24 @@ func (app *application) updatePrinterHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	printer.Name = input.Name
-	printer.Type = input.Type
-	printer.IPAddress = input.IpAddress
-	printer.Status = input.Status
-	printer.Description = input.Description
-	printer.BatteryLeft = input.BatteryLeft
+	if input.Name != nil {
+		printer.Name = *input.Name
+	}
+	if input.Type != nil {
+		printer.Type = *input.Type
+	}
+	if input.IpAddress != nil {
+		printer.IPAddress = *input.IpAddress
+	}
+	if input.Status != nil {
+		printer.Status = *input.Status
+	}
+	if input.Description != nil {
+		printer.Description = *input.Description
+	}
+	if input.BatteryLeft != nil {
+		printer.BatteryLeft = *input.BatteryLeft
+	}
 
 	v := validator.New()
 	if data.ValidatePrinter(v, printer); !v.Valid() {

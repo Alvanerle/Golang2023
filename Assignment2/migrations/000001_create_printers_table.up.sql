@@ -8,5 +8,6 @@ CREATE TABLE IF NOT EXISTS printers (
     status VARCHAR(255) NOT NULL,
     supported_paper_sizes TEXT[] NOT NULL,
     description TEXT NOT NULL,
-    battery_left INTEGER NOT NULL DEFAULT -1
+    battery_left INTEGER NOT NULL DEFAULT -1,
+    version integer NOT NULL DEFAULT 1
 );

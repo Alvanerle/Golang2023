@@ -19,6 +19,7 @@ type Printer struct {
 	SupportedPaperSizes []string  `json:"supported_paper_sizes"`
 	Description         string    `json:"description,omitempty"`
 	BatteryLeft         Runtime   `json:"battery_left,omitempty"` // -1 means not chargeable
+	Version             int32     `json:"version"`
 }
 
 func ValidatePrinter(v *validator.Validator, printer *Printer) {
@@ -40,9 +41,9 @@ func (p PrinterModel) Insert(printer *Printer) error {
 	query := `
 		INSERT INTO printers (name, type, is_color, ip_address, status, supported_paper_sizes, description, battery_left)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		RETURNING id, created_at`
+		RETURNING id, created_at, version`
 	args := []interface{}{printer.Name, printer.Type, printer.IsColor, printer.IPAddress, printer.Status, pq.Array(printer.SupportedPaperSizes), printer.Description, printer.BatteryLeft}
-	return p.DB.QueryRow(query, args...).Scan(&printer.ID, &printer.CreatedAt)
+	return p.DB.QueryRow(query, args...).Scan(&printer.ID, &printer.CreatedAt, &printer.Version)
 }
 
 func (p PrinterModel) Get(id int64) (*Printer, error) {
@@ -51,7 +52,7 @@ func (p PrinterModel) Get(id int64) (*Printer, error) {
 	}
 
 	query := `
-		SELECT id, created_at, name, type, is_color, ip_address, status, supported_paper_sizes, description, battery_left
+		SELECT id, created_at, name, type, is_color, ip_address, status, supported_paper_sizes, description, battery_left, version
 		FROM printers
 		WHERE id = $1`
 
@@ -67,6 +68,7 @@ func (p PrinterModel) Get(id int64) (*Printer, error) {
 		pq.Array(&printer.SupportedPaperSizes),
 		&printer.Description,
 		&printer.BatteryLeft,
+		&printer.Version,
 	)
 
 	if err != nil {
@@ -83,9 +85,9 @@ func (p PrinterModel) Get(id int64) (*Printer, error) {
 func (p PrinterModel) Update(printer *Printer) error {
 	query := `
 		UPDATE printers
-		SET name = $1, type = $2, ip_address = $3, status = $4, description = $5, battery_left = $6
+		SET name = $1, type = $2, ip_address = $3, status = $4, description = $5, battery_left = $6, version = version + 1
 		WHERE id = $7
-		RETURNING id`
+		RETURNING version`
 	args := []interface{}{
 		printer.Name,
 		printer.Type,
@@ -95,7 +97,7 @@ func (p PrinterModel) Update(printer *Printer) error {
 		printer.BatteryLeft,
 		printer.ID,
 	}
-	return p.DB.QueryRow(query, args...).Scan(&printer.ID)
+	return p.DB.QueryRow(query, args...).Scan(&printer.Version)
 }
 
 func (p PrinterModel) Delete(id int64) error {

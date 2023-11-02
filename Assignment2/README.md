@@ -17,3 +17,6 @@ BODY='{"name":"Test update","type":"fsofsokfs","ip_address":"100.101.102.103","s
 ### DELETE
 curl -X DELETE localhost:4000/v1/printers/{id}
 
+### PATCH
+curl -X PATCH -d '{"name": "Test PATCH request"}' localhost:4000/v1/printers/1
+
