@@ -86,7 +86,7 @@ func (p PrinterModel) Update(printer *Printer) error {
 	query := `
 		UPDATE printers
 		SET name = $1, type = $2, ip_address = $3, status = $4, description = $5, battery_left = $6, version = version + 1
-		WHERE id = $7
+		WHERE id = $7 AND version = $8
 		RETURNING version`
 	args := []interface{}{
 		printer.Name,
@@ -96,8 +96,19 @@ func (p PrinterModel) Update(printer *Printer) error {
 		printer.Description,
 		printer.BatteryLeft,
 		printer.ID,
+		printer.Version,
 	}
-	return p.DB.QueryRow(query, args...).Scan(&printer.Version)
+
+	err := p.DB.QueryRow(query, args...).Scan(&printer.Version)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrEditConflict
+		default:
+			return err
+		}
+	}
+	return nil
 }
 
 func (p PrinterModel) Delete(id int64) error {

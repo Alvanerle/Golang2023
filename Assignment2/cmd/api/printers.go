@@ -137,13 +137,19 @@ func (app *application) updatePrinterHandler(w http.ResponseWriter, r *http.Requ
 
 	err = app.models.Printers.Update(printer)
 	if err != nil {
-		app.serverErrorResponse(w, r, err)
+		switch {
+		case errors.Is(err, data.ErrEditConflict):
+			app.editConflictResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
 		return
 	}
 	err = app.writeJSON(w, http.StatusOK, envelope{"printer": printer}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
+
 }
 
 func (app *application) deletePrinterHandler(w http.ResponseWriter, r *http.Request) {
