@@ -173,3 +173,31 @@ func (app *application) deletePrinterHandler(w http.ResponseWriter, r *http.Requ
 		app.serverErrorResponse(w, r, err)
 	}
 }
+
+func (app *application) listPrintersHandler(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Name                string
+		Type                string
+		SupportedPaperSizes []string
+		data.Filters
+	}
+
+	v := validator.New()
+	qs := r.URL.Query()
+
+	input.Name = app.readString(qs, "name", "")
+	input.Type = app.readString(qs, "type", "")
+	input.SupportedPaperSizes = app.readCSV(qs, "supported_paper_sizes", []string{})
+
+	input.Filters.Page = app.readInt(qs, "page", 1, v)
+	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
+
+	input.Filters.Sort = app.readString(qs, "sort", "id")
+
+	if !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	fmt.Fprintf(w, "%+v\n", input)
+}
