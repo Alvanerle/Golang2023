@@ -2,6 +2,7 @@ package data
 
 import (
 	"Printers.imangalizhumash.net/internal/validator"
+	"context"
 	"database/sql"
 	"errors"
 	"github.com/lib/pq"
@@ -43,7 +44,11 @@ func (p PrinterModel) Insert(printer *Printer) error {
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id, created_at, version`
 	args := []interface{}{printer.Name, printer.Type, printer.IsColor, printer.IPAddress, printer.Status, pq.Array(printer.SupportedPaperSizes), printer.Description, printer.BatteryLeft}
-	return p.DB.QueryRow(query, args...).Scan(&printer.ID, &printer.CreatedAt, &printer.Version)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	return p.DB.QueryRowContext(ctx, query, args...).Scan(&printer.ID, &printer.CreatedAt, &printer.Version)
 }
 
 func (p PrinterModel) Get(id int64) (*Printer, error) {
@@ -57,7 +62,9 @@ func (p PrinterModel) Get(id int64) (*Printer, error) {
 		WHERE id = $1`
 
 	var printer Printer
-	err := p.DB.QueryRow(query, id).Scan(
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	err := p.DB.QueryRowContext(ctx, query, id).Scan(
 		&printer.ID,
 		&printer.CreatedAt,
 		&printer.Name,
@@ -99,7 +106,10 @@ func (p PrinterModel) Update(printer *Printer) error {
 		printer.Version,
 	}
 
-	err := p.DB.QueryRow(query, args...).Scan(&printer.Version)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := p.DB.QueryRowContext(ctx, query, args...).Scan(&printer.Version)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
@@ -118,7 +128,11 @@ func (p PrinterModel) Delete(id int64) error {
 	query := `
 		DELETE FROM printers
 		WHERE id = $1`
-	result, err := p.DB.Exec(query, id)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	result, err := p.DB.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
 	}
