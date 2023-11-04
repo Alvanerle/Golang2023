@@ -15,6 +15,7 @@ func (app *application) routes() *httprouter.Router {
 
 	router.HandlerFunc(http.MethodGet, "/v1/printers", app.listPrintersHandler)
 	router.HandlerFunc(http.MethodGet, "/v1/printers/:id", app.showPrinterHandler)
+	router.HandlerFunc(http.MethodPost, "/v1/printers", app.createPrinterHandler)
 	router.HandlerFunc(http.MethodPatch, "/v1/printers/:id", app.updatePrinterHandler)
 	router.HandlerFunc(http.MethodDelete, "/v1/printers/:id", app.deletePrinterHandler)
 	return router

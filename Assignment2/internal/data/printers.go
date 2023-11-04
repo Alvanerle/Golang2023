@@ -150,12 +150,15 @@ func (p PrinterModel) GetAll(name string, type_ string, supported_paper_sizes []
 	query := `
 		SELECT id, created_at, name, type, is_color, ip_address, status, supported_paper_sizes, description, battery_left, version
 		FROM printers
+		WHERE (LOWER(name) = LOWER($1) OR $1 = '')
+		AND (LOWER(type) = LOWER($2) OR $2 = '')
+		AND (supported_paper_sizes @> $3 OR $3 = '{}')
 		ORDER BY id`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	rows, err := p.DB.QueryContext(ctx, query)
+	rows, err := p.DB.QueryContext(ctx, query, name, type_, pq.Array(supported_paper_sizes))
 	if err != nil {
 		return nil, err
 	}
