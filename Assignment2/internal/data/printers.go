@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/lib/pq"
 	"time"
 )
@@ -147,13 +148,13 @@ func (p PrinterModel) Delete(id int64) error {
 }
 
 func (p PrinterModel) GetAll(name string, type_ string, supported_paper_sizes []string, filters Filters) ([]*Printer, error) {
-	query := `
+	query := fmt.Sprintf(`
 		SELECT id, created_at, name, type, is_color, ip_address, status, supported_paper_sizes, description, battery_left, version
 		FROM printers
 		WHERE (to_tsvector('simple', name) @@ plainto_tsquery('simple', $1) OR $1 = '')
 		AND (to_tsvector('simple', type) @@ plainto_tsquery('simple', $2) OR $2 = '')
 		AND (supported_paper_sizes @> $3 OR $3 = '{}')
-		ORDER BY id`
+		ORDER BY %s %s, id ASC`, filters.sortColumn(), filters.sortDirection())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
