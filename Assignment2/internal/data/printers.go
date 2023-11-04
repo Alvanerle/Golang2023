@@ -154,12 +154,15 @@ func (p PrinterModel) GetAll(name string, type_ string, supported_paper_sizes []
 		WHERE (to_tsvector('simple', name) @@ plainto_tsquery('simple', $1) OR $1 = '')
 		AND (to_tsvector('simple', type) @@ plainto_tsquery('simple', $2) OR $2 = '')
 		AND (supported_paper_sizes @> $3 OR $3 = '{}')
-		ORDER BY %s %s, id ASC`, filters.sortColumn(), filters.sortDirection())
+		ORDER BY %s %s, id ASC
+		LIMIT $4 OFFSET $5`, filters.sortColumn(), filters.sortDirection())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	rows, err := p.DB.QueryContext(ctx, query, name, type_, pq.Array(supported_paper_sizes))
+	args := []interface{}{name, type_, pq.Array(supported_paper_sizes), filters.limit(), filters.offset()}
+
+	rows, err := p.DB.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
