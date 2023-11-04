@@ -200,13 +200,13 @@ func (app *application) listPrintersHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	printers, err := app.models.Printers.GetAll(input.Name, input.Type, input.SupportedPaperSizes, input.Filters)
+	printers, metadata, err := app.models.Printers.GetAll(input.Name, input.Type, input.SupportedPaperSizes, input.Filters)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"printers": printers}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"printers": printers, "metadata": metadata}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}

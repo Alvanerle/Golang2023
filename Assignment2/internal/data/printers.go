@@ -147,9 +147,9 @@ func (p PrinterModel) Delete(id int64) error {
 	return nil
 }
 
-func (p PrinterModel) GetAll(name string, type_ string, supported_paper_sizes []string, filters Filters) ([]*Printer, error) {
+func (p PrinterModel) GetAll(name string, type_ string, supported_paper_sizes []string, filters Filters) ([]*Printer, Metadata, error) {
 	query := fmt.Sprintf(`
-		SELECT id, created_at, name, type, is_color, ip_address, status, supported_paper_sizes, description, battery_left, version
+		SELECT COUNT(*) OVER(), id, created_at, name, type, is_color, ip_address, status, supported_paper_sizes, description, battery_left, version
 		FROM printers
 		WHERE (to_tsvector('simple', name) @@ plainto_tsquery('simple', $1) OR $1 = '')
 		AND (to_tsvector('simple', type) @@ plainto_tsquery('simple', $2) OR $2 = '')
@@ -164,15 +164,19 @@ func (p PrinterModel) GetAll(name string, type_ string, supported_paper_sizes []
 
 	rows, err := p.DB.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, err
+		return nil, Metadata{}, err // Update this to return an empty Metadata struct.
 	}
 
 	defer rows.Close()
+
+	totalRecords := 0
+
 	printers := []*Printer{}
 	for rows.Next() {
 		var printer Printer
 
 		err := rows.Scan(
+			&totalRecords,
 			&printer.ID,
 			&printer.CreatedAt,
 			&printer.Name,
@@ -186,14 +190,16 @@ func (p PrinterModel) GetAll(name string, type_ string, supported_paper_sizes []
 			&printer.Version,
 		)
 		if err != nil {
-			return nil, err
+			return nil, Metadata{}, err
 		}
 
 		printers = append(printers, &printer)
 	}
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, Metadata{}, err
 	}
 
-	return printers, nil
+	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
+
+	return printers, metadata, nil
 }
