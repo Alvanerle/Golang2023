@@ -193,11 +193,21 @@ func (app *application) listPrintersHandler(w http.ResponseWriter, r *http.Reque
 	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
 
 	input.Filters.Sort = app.readString(qs, "sort", "id")
-	input.Filters.SortSafelist = []string{"name", "type", "status", "-name", "-type", "-status"}
+	input.Filters.SortSafelist = []string{"id", "name", "type", "status", "-id", "-name", "-type", "-status"}
 
 	if data.ValidateFilters(v, input.Filters); !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
-	fmt.Fprintf(w, "%+v\n", input)
+
+	printers, err := app.models.Printers.GetAll(input.Name, input.Type, input.SupportedPaperSizes, input.Filters)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"printers": printers}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
 }

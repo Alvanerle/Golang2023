@@ -145,3 +145,48 @@ func (p PrinterModel) Delete(id int64) error {
 	}
 	return nil
 }
+
+func (p PrinterModel) GetAll(name string, type_ string, supported_paper_sizes []string, filters Filters) ([]*Printer, error) {
+	query := `
+		SELECT id, created_at, name, type, is_color, ip_address, status, supported_paper_sizes, description, battery_left, version
+		FROM printers
+		ORDER BY id`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rows, err := p.DB.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+	printers := []*Printer{}
+	for rows.Next() {
+		var printer Printer
+
+		err := rows.Scan(
+			&printer.ID,
+			&printer.CreatedAt,
+			&printer.Name,
+			&printer.Type,
+			&printer.IsColor,
+			&printer.IPAddress,
+			&printer.Status,
+			pq.Array(&printer.SupportedPaperSizes),
+			&printer.Description,
+			&printer.BatteryLeft,
+			&printer.Version,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		printers = append(printers, &printer)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return printers, nil
+}
