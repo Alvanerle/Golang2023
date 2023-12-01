@@ -13,11 +13,11 @@ func (app *application) routes() http.Handler {
 
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthcheckHandler)
 
-	router.HandlerFunc(http.MethodGet, "/v1/printers", app.listPrintersHandler)
-	router.HandlerFunc(http.MethodGet, "/v1/printers/:id", app.showPrinterHandler)
-	router.HandlerFunc(http.MethodPost, "/v1/printers", app.createPrinterHandler)
-	router.HandlerFunc(http.MethodPatch, "/v1/printers/:id", app.updatePrinterHandler)
-	router.HandlerFunc(http.MethodDelete, "/v1/printers/:id", app.deletePrinterHandler)
+	router.HandlerFunc(http.MethodGet, "/v1/printers", app.requirePermission("printers:read", app.listPrintersHandler))
+	router.HandlerFunc(http.MethodGet, "/v1/printers/:id", app.requirePermission("printers:read", app.showPrinterHandler))
+	router.HandlerFunc(http.MethodPost, "/v1/printers", app.requirePermission("printers:write", app.createPrinterHandler))
+	router.HandlerFunc(http.MethodPatch, "/v1/printers/:id", app.requirePermission("printers:write", app.updatePrinterHandler))
+	router.HandlerFunc(http.MethodDelete, "/v1/printers/:id", app.requirePermission("printers:write", app.deletePrinterHandler))
 
 	router.HandlerFunc(http.MethodPost, "/v1/users", app.registerUserHandler)
 	router.HandlerFunc(http.MethodPut, "/v1/users/activated", app.activateUserHandler)
