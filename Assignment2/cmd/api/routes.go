@@ -19,5 +19,7 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodPatch, "/v1/printers/:id", app.updatePrinterHandler)
 	router.HandlerFunc(http.MethodDelete, "/v1/printers/:id", app.deletePrinterHandler)
 
+	router.HandlerFunc(http.MethodPost, "/v1/users", app.registerUserHandler)
+
 	return app.recoverPanic(app.rateLimit(router))
 }

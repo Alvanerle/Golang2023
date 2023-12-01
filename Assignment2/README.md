@@ -1,7 +1,7 @@
 Useful commands
 
 ### migration
-migrate -path=./migrations -database=$GOLANG_PROJECT_DB_DSN up
+migrate -path=./migrations -database=$GREENLIGHT_DB_DSN up
 
 ### GET
 curl localhost:4000/v1/printers/{id}
